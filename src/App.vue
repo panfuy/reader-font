@@ -15,6 +15,7 @@ import {
   NMessageProvider,
   NP,
   NText,
+  NTooltip,
   NUpload,
   NUploadDragger,
   UploadFileInfo,
@@ -108,37 +109,42 @@ function handleFileClick(index: number) {
         </a>
       </div>
     </header>
-    <div style="width: 80%; margin: 30px auto">
+    <div style="width: 80%; margin: 20px auto">
       <n-upload v-model:file-list="fileList" directory-dnd @update:file-list="handleUploadChange"
         accept=".ttf,.woff" multiple :show-file-list="false">
         <template #default>
           <n-upload-dragger>
-            <div style="margin-bottom: 12px">
-              <n-icon size="48" :depth="3">
-                <ArchiveIcon />
-              </n-icon>
+            <div style="display: flex; align-items: center; gap: 12px">
+            <n-icon size="48" :depth="3">
+              <ArchiveIcon />
+            </n-icon>
+            <div style="display: flex; flex-direction: column;">
+              <n-text style="font-size: 18px; text-align: left;">
+                点击或者拖动文件到该区域来上传
+              </n-text>
+              <n-p depth="3" style="margin: 4px 0 0 0;">
+                请上传字体文件, 目前仅支持 ttf, woff 格式字体文件
+              </n-p>
             </div>
-            <n-text style="font-size: 16px">
-              点击或者拖动文件到该区域来上传
-            </n-text>
-            <n-p depth="3" style="margin: 8px 0 0 0">
-              请上传字体文件, 目前仅支持 ttf, woff 格式字体文件
-            </n-p>
+          </div>
           </n-upload-dragger>
         </template>
       </n-upload>
-      
+                 
       <!-- 自定义文件列表，用于显示上传的文件并支持点击切换 -->
       <div v-if="fileList.length > 0" class="custom-file-list">
-        <div 
-          v-for="(file, index) in fileList" 
-          :key="index" class="custom-file-item" 
-          :class="{ 'active': index === currentFileIndex }"
-          @click="handleFileClick(index)" >
-          <n-text>{{ file.name }}</n-text>
-          <n-button size="small" type="error" text 
-            @click.stop="handleRemove(file, index)" >X</n-button>
-        </div>
+        <n-tooltip v-for="(file, index) in fileList" :key="index" placement="top">
+          <template #trigger>
+            <div class="custom-file-item"
+              :class="{ 'active': index === currentFileIndex }"
+              @click="handleFileClick(index)" >
+              <n-text>{{ file.name }}</n-text>
+              <n-button size="small" type="error" text 
+                @click.stop="handleRemove(file, index)" >X</n-button>
+            </div>
+          </template>
+          {{ file.name }}
+        </n-tooltip>
       </div>
     </div>
     <icon-list v-if="fontContent" :font="fontContent" />
@@ -173,7 +179,18 @@ function handleFileClick(index: number) {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 10px;
+    padding: 8px;
+    overflow-x: auto;
+    background-color: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .custom-file-list:hover {
+    background-color: #f0f0f0;
+    border-color: #1890ff;
   }
 
   .custom-file-item {
@@ -185,23 +202,26 @@ function handleFileClick(index: number) {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 200px;
     background-color: #f5f5f5;
     border: 1px solid #e0e0e0;
   }
 
-  .custom-file-item n-text {
+  .custom-file-item .n-text {
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-right: 4px;
+    max-width: 150px;
+    display: inline-block;
   }
 
-  .custom-file-item:hover,
+  .custom-file-item:hover {
+    background-color: #e6f7ff73;
+    color: #1890ff;
+    border-color: #91d5ff;
+  }
   .custom-file-item.active {
     background-color: #e6f7ff;
     color: #1890ff;

@@ -119,37 +119,38 @@ function cancelEditing(icon: IconProps) {
 <template>
   <div style="width: 80%; margin: 30px auto">
     <n-input-group style="justify-content: left">
-      <n-button size="large" style="padding: 8px 16px;">全部下载PNG</n-button>&nbsp;&nbsp;
-      <n-button size="large" style="padding: 8px 16px;">全部下载SVG</n-button>&nbsp;&nbsp;
+      <n-button size="large" style="padding: 8px 16px;">暂存</n-button>&nbsp;&nbsp;
+      <n-button size="large" style="padding: 8px 16px;">下载全部</n-button>&nbsp;&nbsp;
       <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
       <n-button type="primary" ghost size="large">搜索</n-button>
     </n-input-group>
   </div>
 
-  <ul class="icon-list--wrapper">
-    <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
-      <div class="icon--item-box" @click="handleOpenEdit(svg)">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          :viewBox="svg.viewBox"
-          style="width: 100%; height: 100%"
-          v-html="svg.svgPath"
-        ></svg>
-      </div>
-      <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
-      <n-input
-        v-else
-        v-model:value="svg.editingName"
-        size="small"
-        @blur="finishEditing(svg)"
-        @keyup.enter="finishEditing(svg)"
-        @keyup.esc="cancelEditing(svg)"
-        autofocus
-        style="width: 120px;"
-      />
-    </li>
-  </ul>
-
+  <div style="width: 100%; max-height: 400px; overflow-y: auto;">
+    <ul class="icon-list--wrapper">
+      <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
+        <div class="icon--item-box" @click="handleOpenEdit(svg)">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            :viewBox="svg.viewBox"
+            style="width: 100%; height: 100%"
+            v-html="svg.svgPath"
+          ></svg>
+        </div>
+        <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
+        <n-input
+          v-else
+          v-model:value="svg.editingName"
+          size="small"
+          @blur="finishEditing(svg)"
+          @keyup.enter="finishEditing(svg)"
+          @keyup.esc="cancelEditing(svg)"
+          autofocus
+          style="width: 120px;"
+        />
+      </li>
+    </ul>
+  </div>
   <icon-detail ref="iconDetailRef"></icon-detail>
 </template>
 
