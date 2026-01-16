@@ -11,6 +11,7 @@ import { ref, Ref, useTemplateRef } from 'vue';
 import {
   NButton,
   NColorPicker,
+  NInput,
   NInputNumber,
   NModal,
   NSpace,
@@ -235,42 +236,64 @@ function toggleGridVisibility() {
         ></svg>
       </div>
       <div class="controls" style="width: 300px; margin-left: 20px">
-        <div class="label">颜色:</div>
-        <n-color-picker :modes="['hex']" @update:value="updateColor" />
-        <div class="label">旋转:</div>
-        <div class="rotate-controls">
-          <ReloadCircleOutline @click="rotateIcon(45)" />
-          <ReloadCircleOutline
-            style="transform: rotateY(-180deg)"
-            @click="rotateIcon(-45)"
+        <div class="control-item">
+          <div class="label">名称:</div>
+          <n-input 
+            v-if="currentIcon"
+            v-model:value="currentIcon.iconName" 
+            placeholder="输入图标名称"
+            size="medium"
+            style="width: 100%"
           />
-          <div style="padding-top: 3px">
-            <n-input-number
-              size="medium"
-              style="width: 200px"
-              v-model:value="rotationAngle"
-              @change="setRotationAngle"
-              placeholder="Enter angle"
-            ></n-input-number>
+        </div>
+        <div class="control-item">
+          <div class="label">颜色:</div>
+          <n-color-picker :modes="['hex']" @update:value="updateColor" />
+        </div>
+        <div class="control-item">
+          <div class="label">缩放:</div>
+          <n-input-number
+            size="medium"
+            style="width: 100%"
+            v-model:value="scaleFactor"
+            @change="setScaleFactor"
+            placeholder="Enter scale"
+          ></n-input-number>
+        </div>
+        <div class="control-item">
+          <div class="label">旋转:</div>
+          <div class="rotate-controls" style="width: 100%">
+            <ReloadCircleOutline @click="rotateIcon(45)" />
+            <ReloadCircleOutline
+              style="transform: rotateY(-180deg)"
+              @click="rotateIcon(-45)"
+            />
+            <div style="padding-top: 3px; margin-left: 8px">
+              <n-input-number
+                size="medium"
+                style="width: 100%"
+                v-model:value="rotationAngle"
+                @change="setRotationAngle"
+                placeholder="Enter angle"
+              ></n-input-number>
+            </div>
           </div>
         </div>
-        <div class="label">缩放:</div>
-        <n-input-number
-          size="medium"
-          style="width: 200px"
-          v-model:value="scaleFactor"
-          @change="setScaleFactor"
-          placeholder="Enter scale factor"
-        ></n-input-number>
-        <div class="label">移动:</div>
-        <div class="move-controls">
-          <n-button @click="moveIcon('up')">↑</n-button>
-          <n-button @click="moveIcon('down')">↓</n-button>
-          <n-button @click="moveIcon('left')">←</n-button>
-          <n-button @click="moveIcon('right')">→</n-button>
+        <div class="control-item">
+          <div class="label">移动:</div>
+          <div class="move-controls">
+            <n-button @click="moveIcon('up')">↑</n-button>
+            <n-button @click="moveIcon('down')">↓</n-button>
+            <n-button @click="moveIcon('left')">←</n-button>
+            <n-button @click="moveIcon('right')">→</n-button>
+          </div>
         </div>
-        <div class="label">网格:</div>
-        <n-button @click="toggleGridVisibility">{{ isGridVisible ? '隐藏' : '显示' }}</n-button>
+        <div class="control-item">
+          <div class="label">网格:</div>
+          <div style="width: 100%">
+            <n-button @click="toggleGridVisibility">{{ isGridVisible ? '隐藏' : '显示' }}</n-button>
+          </div>
+        </div>
       </div>
     </div>
     <div style="margin-top: 20px">
@@ -315,18 +338,27 @@ function toggleGridVisibility() {
       z-index: 1; // Ensure SVG is above the grid
     }
   }
+  
+  .control-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
 
   .label {
     font-size: 16px;
-    margin-bottom: 6px;
+    margin-right: 12px;
     color: #696969;
     font-weight: bold;
+    width: 60px;
+    text-align: left;
   }
 
   .rotate-controls,
   .move-controls {
     display: flex;
     gap: 10px;
+    width: 100%;
 
     & > svg,
     & > button {

@@ -7,7 +7,7 @@
  * @FilePath: /reader-font/src/components/icon-list.vue
 -->
 <script setup lang="ts">
-import { ref, Ref, useTemplateRef, watchEffect } from 'vue';
+import { ref, Ref, useTemplateRef, watchEffect, onMounted, onUnmounted } from 'vue';
 
 import { NButton, NInput, NInputGroup } from 'naive-ui';
 import type { Font, GlyphSet } from 'opentype.js';
@@ -19,6 +19,8 @@ type IconProps = {
   iconName: string;
   viewBox: string;
   svgPath: string;
+  isEditing?: boolean;
+  editingName?: string;
 };
 
 const props = defineProps<{ font: Font }>();
@@ -43,6 +45,8 @@ function generatorIconList(font: Font) {
       iconName: glyph.name || '',
       viewBox: `${x1} ${y1} ${x2 - x1} ${y2 - y1}`,
       svgPath: path.toSVG(2),
+      isEditing: false,
+      editingName: glyph.name || '',
     });
   }
   return genIconList;
@@ -80,12 +84,44 @@ function handleSearch(text: string) {
     item.iconName.toLowerCase().includes(text.toLowerCase())
   );
 }
+
+/**
+ * 开始编辑图标名称
+ */
+function startEditing(icon: IconProps) {
+  // 先关闭所有其他图标项的编辑状态
+  iconList.value.forEach(item => {
+    item.isEditing = false;
+  });
+  // 开始编辑当前图标项
+  icon.isEditing = true;
+  icon.editingName = icon.iconName;
+}
+
+/**
+ * 完成编辑图标名称
+ */
+function finishEditing(icon: IconProps) {
+  if (icon.editingName?.trim()) {
+    icon.iconName = icon.editingName.trim();
+  }
+  icon.isEditing = false;
+}
+
+/**
+ * 取消编辑图标名称
+ */
+function cancelEditing(icon: IconProps) {
+  icon.isEditing = false;
+}
 </script>
 
 <template>
-  <div style="margin: 16px 0">
-    <n-input-group style="justify-content: center">
-      <n-input @change="handleSearch" style="width: 60%" size="large" placeholder="请输入名称"></n-input>
+  <div style="width: 80%; margin: 30px auto">
+    <n-input-group style="justify-content: left">
+      <n-button size="large" style="padding: 8px 16px;">全部下载PNG</n-button>&nbsp;&nbsp;
+      <n-button size="large" style="padding: 8px 16px;">全部下载SVG</n-button>&nbsp;&nbsp;
+      <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
       <n-button type="primary" ghost size="large">搜索</n-button>
     </n-input-group>
   </div>
@@ -100,7 +136,17 @@ function handleSearch(text: string) {
           v-html="svg.svgPath"
         ></svg>
       </div>
-      <div>{{ svg.iconName }}</div>
+      <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
+      <n-input
+        v-else
+        v-model:value="svg.editingName"
+        size="small"
+        @blur="finishEditing(svg)"
+        @keyup.enter="finishEditing(svg)"
+        @keyup.esc="cancelEditing(svg)"
+        autofocus
+        style="width: 120px;"
+      />
     </li>
   </ul>
 
@@ -134,6 +180,18 @@ function handleSearch(text: string) {
 
     &:hover > svg {
       fill: orange;
+    }
+  }
+
+  .icon-name {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #e6f7ff;
+      color: #1890ff;
     }
   }
 }
