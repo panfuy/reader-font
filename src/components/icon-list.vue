@@ -91,36 +91,52 @@ function openDownloadModal() {
  * 下载全部图标为SVG
  */
 function downloadAllSvg() {
+  // 防止重复点击
+  if (isDownloading.value) return;
+  isDownloading.value = true;
+  
   console.log('Downloading all icons as SVG...');
   const zip = new JSZip();
   
-  // 遍历所有图标，添加到zip文件中
-  allIconList.value.forEach(icon => {
-    // 生成完整的SVG内容
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icon.viewBox}" width="1024" height="1024">
+  try {
+    // 遍历所有图标，添加到zip文件中
+    allIconList.value.forEach(icon => {
+      // 生成完整的SVG内容
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icon.viewBox}" width="1024" height="1024">
 ${icon.svgPath}
 </svg>`;
-    // 添加到zip文件
-    zip.file(`${icon.iconName || `icon_${icon.unicode}`}.svg`, svgContent);
-  });
-  
-  // 生成zip文件并下载
-  zip.generateAsync({ type: 'blob' }).then(content => {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    // 使用当前解析的ttf文件名称作为zip文件名
-    const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
-    link.download = `${baseFilename}-svg.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    message.success('SVG图标下载成功');
-  }).catch(error => {
+      // 添加到zip文件
+      zip.file(`${icon.iconName || `icon_${icon.unicode}`}.svg`, svgContent);
+    });
+    
+    // 生成zip文件并下载
+    zip.generateAsync({ type: 'blob' }).then(content => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      // 使用当前解析的ttf文件名称作为zip文件名
+      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
+      link.download = `${baseFilename}-svg.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      message.success('SVG图标下载成功');
+    }).catch(error => {
+      console.error('Failed to download SVG icons:', error);
+      message.error('SVG图标下载失败');
+    }).finally(() => {
+      setTimeout(() => {
+        // 重置状态
+        isDownloading.value = false;
+        // isDownloadModalVisible.value = false;
+      }, 3000);
+    });
+  } catch (error) {
     console.error('Failed to download SVG icons:', error);
     message.error('SVG图标下载失败');
-  });
-  
-  isDownloadModalVisible.value = false;
+    // 重置状态
+    isDownloading.value = false;
+    // isDownloadModalVisible.value = false;
+  }
 }
 
 /**
@@ -197,6 +213,10 @@ ${icon.svgPath}
  * 下载全部图标为PNG
  */
 async function downloadAllPng() {
+  // 防止重复点击
+  if (isDownloading.value) return;
+  isDownloading.value = true;
+  
   console.log('Downloading all icons as PNG...');
   const zip = new JSZip();
   
@@ -237,13 +257,20 @@ async function downloadAllPng() {
     }).catch(error => {
       console.error('Failed to generate PNG zip:', error);
       message.error('PNG图标下载失败');
+    }).finally(() => {
+      setTimeout(() => {
+        // 重置状态
+        isDownloading.value = false;
+        // isDownloadModalVisible.value = false;
+      }, 3000);
     });
   } catch (error) {
     console.error('Failed to convert icons to PNG:', error);
     message.error('PNG图标转换失败');
+    // 重置状态
+    isDownloading.value = false;
+    // isDownloadModalVisible.value = false;
   }
-  
-  isDownloadModalVisible.value = false;
 }
 
 /**
@@ -337,8 +364,8 @@ function cancelEditing(icon: IconProps) {
     <div class="download-modal-content">
       <div style="margin-top: 20px">
         <n-space justify="center" size="large">
-          <n-button type="primary" @click="downloadAllSvg">下载 SVG</n-button>
-          <n-button type="primary" @click="downloadAllPng">下载 PNG</n-button>
+          <n-button type="primary" @click="downloadAllSvg" :disabled="isDownloading">下载 SVG</n-button>
+          <n-button type="primary" @click="downloadAllPng" :disabled="isDownloading">下载 PNG</n-button>
         </n-space>
       </div>
     </div>
