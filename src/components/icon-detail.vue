@@ -256,7 +256,7 @@ function toggleGridVisibility() {
             size="medium"
             style="width: 100%"
             v-model:value="scaleFactor"
-            @change="setScaleFactor"
+            @update:value="setScaleFactor"
             placeholder="Enter scale"
           ></n-input-number>
         </div>
@@ -273,7 +273,7 @@ function toggleGridVisibility() {
                 size="medium"
                 style="width: 100%"
                 v-model:value="rotationAngle"
-                @change="setRotationAngle"
+                @update:value="setRotationAngle"
                 placeholder="Enter angle"
               ></n-input-number>
             </div>

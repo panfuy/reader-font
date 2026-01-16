@@ -7,9 +7,9 @@
  * @FilePath: /reader-font/src/components/icon-list.vue
 -->
 <script setup lang="ts">
-import { ref, Ref, useTemplateRef, watchEffect, onMounted, onUnmounted } from 'vue';
+import { ref, Ref, useTemplateRef, watchEffect } from 'vue';
 
-import { NButton, NInput, NInputGroup } from 'naive-ui';
+import { NButton, NInput, NInputGroup, NModal, NSpace, useMessage } from 'naive-ui';
 import type { Font, GlyphSet } from 'opentype.js';
 
 import iconDetail from './icon-detail.vue';
@@ -74,6 +74,35 @@ function handleOpenEdit(icon: IconProps) {
   iconDetailRef.value?.openModal(icon);
 }
 
+// 下载全部弹窗相关
+const isDownloadModalVisible = ref(false);
+const message = useMessage();
+
+/**
+ * 打开下载全部弹窗
+ */
+function openDownloadModal() {
+  isDownloadModalVisible.value = true;
+}
+
+/**
+ * 下载全部图标为SVG
+ */
+function downloadAllSvg() {
+  console.log('Downloading all icons as SVG...');
+  message.info('SVG下载功能开发中');
+  isDownloadModalVisible.value = false;
+}
+
+/**
+ * 下载全部图标为PNG
+ */
+function downloadAllPng() {
+  console.log('Downloading all icons as PNG...');
+  message.info('PNG下载功能开发中');
+  isDownloadModalVisible.value = false;
+}
+
 /**
  * 根据搜索文本过滤图标列表。
  *
@@ -120,7 +149,7 @@ function cancelEditing(icon: IconProps) {
   <div style="width: 80%; margin: 30px auto">
     <n-input-group style="justify-content: left">
       <n-button size="large" style="padding: 8px 16px;">暂存</n-button>&nbsp;&nbsp;
-      <n-button size="large" style="padding: 8px 16px;">下载全部</n-button>&nbsp;&nbsp;
+      <n-button size="large" style="padding: 8px 16px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
       <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
       <n-button type="primary" ghost size="large">搜索</n-button>
     </n-input-group>
@@ -152,6 +181,25 @@ function cancelEditing(icon: IconProps) {
     </ul>
   </div>
   <icon-detail ref="iconDetailRef"></icon-detail>
+  
+  <!-- 下载全部弹窗 -->
+  <n-modal
+    v-model:show="isDownloadModalVisible"
+    preset="card"
+    :style="{ width: '400px' }"
+    title="下载全部图标"
+    size="medium"
+    :bordered="false"
+  >
+    <div class="download-modal-content">
+      <div style="margin-top: 20px">
+        <n-space justify="center" size="large">
+          <n-button type="primary" @click="downloadAllSvg">下载 SVG</n-button>
+          <n-button type="primary" @click="downloadAllPng">下载 PNG</n-button>
+        </n-space>
+      </div>
+    </div>
+  </n-modal>
 </template>
 
 <style lang="scss" scoped>

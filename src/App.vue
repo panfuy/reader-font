@@ -44,7 +44,7 @@ function handleUploadChange(evt: any) {
   }
 }
 
-function handleRemove(file: any, index: number) {
+function handleRemove(_file: any, index: number) {
   console.log('handleRemove called, removing index:', index, 'currentFileIndex:', currentFileIndex.value);
   
   // 手动从fileList中移除指定索引的文件
