@@ -13,6 +13,7 @@ import { NButton, NInput, NInputGroup, NModal, NSpace, useMessage } from 'naive-
 import type { Font, GlyphSet } from 'opentype.js';
 
 import iconDetail from './icon-detail.vue';
+import JSZip from 'jszip';
 
 type IconProps = {
   unicode: number;
@@ -23,7 +24,7 @@ type IconProps = {
   editingName?: string;
 };
 
-const props = defineProps<{ font: Font }>();
+const props = defineProps<{ font: Font; filename?: string }>();
 
 /**
  * 从给定的字体生成图标列表。
@@ -77,6 +78,7 @@ function handleOpenEdit(icon: IconProps) {
 // 下载全部弹窗相关
 const isDownloadModalVisible = ref(false);
 const message = useMessage();
+const isDownloading = ref(false); // 防止重复点击的状态
 
 /**
  * 打开下载全部弹窗
@@ -90,16 +92,157 @@ function openDownloadModal() {
  */
 function downloadAllSvg() {
   console.log('Downloading all icons as SVG...');
-  message.info('SVG下载功能开发中');
+  const zip = new JSZip();
+  
+  // 遍历所有图标，添加到zip文件中
+  allIconList.value.forEach(icon => {
+    // 生成完整的SVG内容
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icon.viewBox}" width="1024" height="1024">
+${icon.svgPath}
+</svg>`;
+    // 添加到zip文件
+    zip.file(`${icon.iconName || `icon_${icon.unicode}`}.svg`, svgContent);
+  });
+  
+  // 生成zip文件并下载
+  zip.generateAsync({ type: 'blob' }).then(content => {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    // 使用当前解析的ttf文件名称作为zip文件名
+    const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
+    link.download = `${baseFilename}-svg.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success('SVG图标下载成功');
+  }).catch(error => {
+    console.error('Failed to download SVG icons:', error);
+    message.error('SVG图标下载失败');
+  });
+  
   isDownloadModalVisible.value = false;
+}
+
+/**
+ * 将SVG内容转换为base64 URL
+ * @param svgContent SVG内容
+ * @returns base64 URL
+ */
+/**
+ * 将单个SVG转换为PNG
+ * @param icon 图标对象
+ * @returns Promise<Blob> PNG的Blob对象
+ */
+function svgToPng(icon: IconProps): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    try {
+      // 生成完整的SVG内容，确保格式正确
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icon.viewBox}" width="1024" height="1024">
+${icon.svgPath}
+</svg>`;
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      
+      const width = 1024;
+      canvas.width = width;
+      canvas.height = width;
+      
+      // 设置背景透明
+      context.fillStyle = 'transparent';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const image = new Image();
+      // 解决跨域问题
+      image.crossOrigin = 'anonymous';
+      // 使用encodeURIComponent处理SVG内容，避免字符编码问题
+      image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+      
+      image.onload = () => {
+        try {
+          // 绘制图像
+          context.drawImage(image, 0, 0, width, width);
+          // 将canvas转换为Blob对象
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create blob from canvas'));
+            }
+            // 清理资源
+            canvas.remove();
+          }, 'image/png', 1.0);
+        } catch (error) {
+          reject(error);
+          canvas.remove();
+        }
+      };
+      
+      image.onerror = (error) => {
+        reject(new Error(`Failed to load image: ${error}`));
+        canvas.remove();
+      };
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 /**
  * 下载全部图标为PNG
  */
-function downloadAllPng() {
+async function downloadAllPng() {
   console.log('Downloading all icons as PNG...');
-  message.info('PNG下载功能开发中');
+  const zip = new JSZip();
+  
+  try {
+    // 遍历所有图标，转换为PNG并添加到zip文件中
+    const promises = allIconList.value.map(async (icon) => {
+      try {
+        // 直接获取Blob对象
+        const pngBlob = await svgToPng(icon);
+        // 直接将Blob添加到zip文件
+        zip.file(`${icon.iconName || `icon_${icon.unicode}`}.png`, pngBlob);
+      } catch (error) {
+        console.error(`Failed to convert icon ${icon.iconName || icon.unicode} to PNG:`, error);
+        // 跳过转换失败的图标，继续转换其他图标
+      }
+    });
+    
+    // 等待所有转换完成
+    await Promise.all(promises);
+    
+    // 检查是否有转换成功的图标
+    const zipFiles = Object.keys(zip.files);
+    if (zipFiles.length === 0) {
+      throw new Error('No icons were converted to PNG successfully');
+    }
+    
+    // 生成zip文件并下载
+    zip.generateAsync({ type: 'blob' }).then(content => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      // 使用当前解析的ttf文件名称作为zip文件名
+      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
+      link.download = `${baseFilename}-png.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      message.success('PNG图标下载成功');
+    }).catch(error => {
+      console.error('Failed to generate PNG zip:', error);
+      message.error('PNG图标下载失败');
+    });
+  } catch (error) {
+    console.error('Failed to convert icons to PNG:', error);
+    message.error('PNG图标转换失败');
+  }
+  
   isDownloadModalVisible.value = false;
 }
 

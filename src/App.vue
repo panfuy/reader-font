@@ -147,7 +147,7 @@ function handleFileClick(index: number) {
         </n-tooltip>
       </div>
     </div>
-    <icon-list v-if="fontContent" :font="fontContent" />
+    <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
   </n-message-provider>
 </template>
 
