@@ -7,7 +7,7 @@
  * @FilePath: /reader-font/src/components/icon-list.vue
 -->
 <script setup lang="ts">
-import { ref, Ref, useTemplateRef, watchEffect } from 'vue';
+import { ref, Ref, useTemplateRef, watchEffect, computed } from 'vue';
 
 import { NButton, NInput, NInputGroup, NModal, NSpace, useMessage } from 'naive-ui';
 import type { Font, GlyphSet } from 'opentype.js';
@@ -31,6 +31,17 @@ const allIconList: Ref<IconProps[]> = ref([]);
 const iconList: Ref<IconProps[]> = ref([]);
 // 存储键前缀，用于避免键名冲突
 const storageKeyPrefix: Ref<string> = ref('font-icons-');
+// 计算属性：判断当前文件数据是否已保存到localStorage
+const isDataSaved = computed(() => {
+  if (!props.filename) return false;
+  try {
+    const storageKey = getSafeStorageKey(props.filename);
+    return localStorage.getItem(storageKey) !== null;
+  } catch (error) {
+    console.error('Failed to check if data is saved:', error);
+    return false;
+  }
+});
 
 /**
  * 获取安全的localStorage键名
@@ -128,7 +139,7 @@ watchEffect(() => {
   }
   
   // 如果没有缓存数据，从props生成图标列表
-  console.log(`Generating new icon list for ${props.filename} from props`);
+  console.log(`Generating icon list for ${props.filename}`);
   const newIcons = generatorIconList(props.font);
   allIconList.value = newIcons;
   iconList.value = newIcons;
@@ -446,16 +457,23 @@ function cancelEditing(icon: IconProps) {
 </script>
 
 <template>
-  <div style="width: 80%; margin: 30px auto">
+  <div style="width: 100%; margin: 20px auto;">
     <n-input-group style="justify-content: left">
-      <n-button size="large" style="padding: 8px 16px;" @click="handleSave">暂存</n-button>&nbsp;&nbsp;
+      <n-button 
+        size="large" 
+        style="padding: 8px 16px;" 
+        @click="handleSave"
+        :type="isDataSaved ? 'primary' : undefined"
+        :ghost="isDataSaved ? true : false"
+      >暂存</n-button>
+      &nbsp;&nbsp;
       <n-button size="large" style="padding: 8px 16px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
       <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
       <n-button type="primary" ghost size="large">搜索</n-button>
     </n-input-group>
   </div>
 
-  <div style="width: 100%; max-height: 400px; overflow-y: auto;">
+  <div style="width: 100%; flex: 1; overflow-y: auto; padding-bottom: 20px;">
     <ul class="icon-list--wrapper">
       <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
         <div class="icon--item-box" @click="handleOpenEdit(svg)">
@@ -506,20 +524,48 @@ function cancelEditing(icon: IconProps) {
 .icon-list--wrapper {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  margin: 0;
+  justify-content: flex-start;
+  margin: 0 auto;
   padding: 0;
+  width: 100%;
+  max-width: 1800px; /* 增加最大宽度，适应宽屏幕 */
 }
 
 .icon--item {
   list-style: none;
-  margin: 16px 0;
-  width: 16%;
-  min-width: 200px;
+  margin: 16px;
+  width: calc(14.28% - 32px); /* 每行7个图标，减去左右margin */
+  min-width: 120px; /* 进一步减小最小宽度，适应更多图标 */
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  
+  @media (min-width: 1920px) {
+    width: calc(11.11% - 32px); /* 每行9个图标 */
+  }
+
+  /* 媒体查询：在超宽屏幕上显示更多图标 */
+  @media (min-width: 1600px) {
+    width: calc(12.5% - 32px); /* 每行8个图标 */
+  }
+  
+  /* 在小屏幕上减少图标数量，保持良好显示 */
+  @media (max-width: 1200px) {
+    width: calc(16.66% - 32px); /* 每行6个图标 */
+  }
+  
+  @media (max-width: 992px) {
+    width: calc(20% - 32px); /* 每行5个图标 */
+  }
+  
+  @media (max-width: 768px) {
+    width: calc(25% - 32px); /* 每行4个图标 */
+  }
+  
+  @media (max-width: 576px) {
+    width: calc(33.33% - 32px); /* 每行3个图标 */
+  }
 
   &-box {
     width: 30px;

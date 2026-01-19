@@ -109,72 +109,106 @@ function handleFileClick(index: number) {
         </a>
       </div>
     </header>
-    <div style="width: 80%; margin: 20px auto">
-      <n-upload v-model:file-list="fileList" directory-dnd @update:file-list="handleUploadChange"
-        accept=".ttf,.woff" multiple :show-file-list="false">
-        <template #default>
-          <n-upload-dragger>
-            <div style="display: flex; align-items: center; gap: 12px">
-            <n-icon size="48" :depth="3">
-              <ArchiveIcon />
-            </n-icon>
-            <div style="display: flex; flex-direction: column;">
-              <n-text style="font-size: 18px; text-align: left;">
-                点击或者拖动文件到该区域来上传
-              </n-text>
-              <n-p depth="3" style="margin: 4px 0 0 0;">
-                请上传字体文件, 目前仅支持 ttf, woff 格式字体文件
-              </n-p>
+    <div class="main-content">
+      <div class="upload-section">
+        <n-upload v-model:file-list="fileList" directory-dnd @update:file-list="handleUploadChange"
+          accept=".ttf,.woff" multiple :show-file-list="false">
+          <template #default>
+            <n-upload-dragger>
+              <div style="display: flex; align-items: center; gap: 12px">
+              <n-icon size="48" :depth="3">
+                <ArchiveIcon />
+              </n-icon>
+              <div style="display: flex; flex-direction: column;">
+                <n-text style="font-size: 18px; text-align: left;">
+                  点击或者拖动文件到该区域来上传
+                </n-text>
+                <n-p depth="3" style="margin: 4px 0 0 0;">
+                  请上传字体文件, 目前仅支持 ttf, woff 格式字体文件
+                </n-p>
+              </div>
             </div>
-          </div>
-          </n-upload-dragger>
-        </template>
-      </n-upload>
-                 
-      <!-- 自定义文件列表，用于显示上传的文件并支持点击切换 -->
-      <div v-if="fileList.length > 0" class="custom-file-list">
-        <n-tooltip v-for="(file, index) in fileList" :key="index" placement="top">
-          <template #trigger>
-            <div class="custom-file-item"
-              :class="{ 'active': index === currentFileIndex }"
-              @click="handleFileClick(index)" >
-              <n-text>{{ file.name }}</n-text>
-              <n-button size="small" type="error" text 
-                @click.stop="handleRemove(file, index)" >X</n-button>
-            </div>
+            </n-upload-dragger>
           </template>
-          {{ file.name }}
-        </n-tooltip>
+        </n-upload>
+                 
+        <!-- 自定义文件列表，用于显示上传的文件并支持点击切换 -->
+        <div v-if="fileList.length > 0" class="custom-file-list">
+          <n-tooltip v-for="(file, index) in fileList" :key="index" placement="top">
+            <template #trigger>
+              <div class="custom-file-item"
+                :class="{ 'active': index === currentFileIndex }"
+                @click="handleFileClick(index)" >
+                <n-text>{{ file.name }}</n-text>
+                <n-button size="small" type="error" text 
+                  @click.stop="handleRemove(file, index) " >X</n-button>
+              </div>
+            </template>
+            {{ file.name }}
+          </n-tooltip>
+        </div>
       </div>
+      <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
     </div>
-    <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
   </n-message-provider>
 </template>
 
-<style lang="scss" scoped>
-.header {
-  display: flex;
-  justify-content: space-between;
-  height: 50px;
-  padding: 0 20px;
-  line-height: 50px;
-  border-bottom: 1px solid #e2e2e2;
-
-  &--title {
-    font-size: 24px;
-    font-weight: 600;
+<style lang="scss">
+  /* 全局样式，确保整个页面不超过视口高度 */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
-
-  &--icon {
-    width: 26px;
-    display: inline-block;
+  
+  #app {
+    height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 50px;
-    cursor: pointer;
+    flex-direction: column;
+    overflow: hidden;
   }
-}
+</style>
+
+<style lang="scss" scoped>
+  .header {
+    display: flex;
+    justify-content: space-between;
+    height: 50px;
+    padding: 0 20px;
+    line-height: 50px;
+    border-bottom: 1px solid #e2e2e2;
+
+    &--title {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    &--icon {
+      width: 26px;
+      display: inline-block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      cursor: pointer;
+    }
+  }
+  
+  .main-content {
+    width: 80%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px 0;
+    margin: 0 auto;
+  }
+  
+  .upload-section {
+    width: 100%;
+  }
+  
   .custom-file-list {
     display: flex;
     flex-wrap: wrap;
