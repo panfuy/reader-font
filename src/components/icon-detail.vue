@@ -218,7 +218,7 @@ function toggleGridVisibility() {
     v-model:show="isModalVisible"
     preset="card"
     :style="{ width: '700px' }"
-    title="Icon Details"
+    title="详情"
     size="huge"
     :bordered="false"
   >

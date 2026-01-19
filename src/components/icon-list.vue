@@ -7,29 +7,24 @@
  * @FilePath: /reader-font/src/components/icon-list.vue
 -->
 <script setup lang="ts">
-import { ref, Ref, useTemplateRef, watchEffect, computed } from 'vue';
+import { ref, Ref, useTemplateRef, watchEffect } from 'vue';
 import { NButton, NInput, NInputGroup, NModal, NSpace, useMessage } from 'naive-ui';
 import type { Font, GlyphSet } from 'opentype.js';
 import iconDetail from './icon-detail.vue';
-import { getSafeStorageKey, saveFileNameData, IconProps, getFontData, saveFontData } from '../utils/storageUtil';
+import { saveFileNameData, IconProps, getFontData, saveFontData } from '../utils/storageUtil';
 import JSZip from 'jszip';
+// 导入勾选图标
+import TrueIcon from '../assets/true.svg';
 
 const props = defineProps<{ font: Font|undefined|null; filename?: string }>();
-
+// 当前文件的原始数据
 const allIconList: Ref<IconProps[]> = ref([]);
+// 当显示在页面的数据
 const iconList: Ref<IconProps[]> = ref([]);
-
-// 计算属性：判断当前文件数据是否已保存到localStorage
-const isDataSaved = computed(() => {
-  if (!props.filename) return false;
-  try {
-    const storageKey = getSafeStorageKey(props.filename);
-    return localStorage.getItem(storageKey) !== null;
-  } catch (error) {
-    console.error('Failed to check if data is saved:', error);
-    return false;
-  }
-});
+// 当前文件是否已经保存
+const iconSaved: Ref<boolean> = ref(false);
+// 搜索文本
+const searchText: Ref<string> = ref('');
 
 /**
  * 从localStorage加载保存的图标数据
@@ -44,12 +39,14 @@ function loadSavedIconData(): boolean {
       console.log(`Loaded saved icon data for ${props.filename}`);
       allIconList.value = savedIcons;
       iconList.value = savedIcons;
+      iconSaved.value = true;
       return true; // 成功加载
     }
   } catch (error) {
     console.error('Failed to load saved icon data:', error);
     message.error('加载保存的图标数据失败：' + (error instanceof Error ? error.message : '未知错误'));
   }
+  iconSaved.value = false;
   return false; // 加载失败
 }
 
@@ -88,9 +85,11 @@ watchEffect(() => {
   
   // 如果成功加载了缓存数据，就不再从props生成
   if (hasLoadedFromCache) {
+    iconSaved.value = true;
     console.log(`Successfully loaded icon data from cache for ${props.filename}`);
     return;
   }
+  iconSaved.value = false;
   // 确保字体对象存在
   if (!props.font) {
     console.log('No font provided, clearing icon list');
@@ -143,9 +142,10 @@ function handleSave() {
     saveFontData(props.filename, allIconList.value);
     // 将暂存的文件名存起来
     saveFileNameData(props.filename);
-    
+    iconSaved.value = true;
     message.success(`成功保存 ${props.filename} 的图标数据`);
   } catch (error) {
+    iconSaved.value = false;
     console.error('Failed to save icon data:', error);
     message.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'));
   }
@@ -337,13 +337,32 @@ async function downloadAllPng() {
 
 /**
  * 根据搜索文本过滤图标列表。
- *
  * @param text 要过滤图标的名称。
  */
 function handleSearch(text: string) {
+  // 输出搜索内容到控制台
+  console.log('Search text:', text);
+  if (!text.trim()) {
+    // 如果搜索文本为空，显示所有图标
+    iconList.value = allIconList.value;
+    return;
+  }
+  // 过滤图标列表，根据图标名称是否包含搜索文本
   iconList.value = allIconList.value.filter((item) =>
     item.iconName.toLowerCase().includes(text.toLowerCase())
   );
+}
+
+/**
+ * 清空搜索文本
+ */
+function clearSearch() {
+  // 清空搜索文本
+  searchText.value = '';
+  // 重置搜索结果，显示所有图标
+  iconList.value = allIconList.value;
+  // 输出清空操作到控制台
+  console.log('Search cleared');
 }
 
 /**
@@ -382,10 +401,17 @@ function cancelEditing(icon: IconProps) {
     <!-- 固定操作栏 -->
     <div class="fixed-action-bar">
       <n-input-group style="justify-content: left">
-        <n-button size="small" style="padding: 4px 12px;" @click="handleSave"
-          :type="isDataSaved ? 'primary' : undefined" :ghost="isDataSaved ? true : false">暂存</n-button>&nbsp;&nbsp;
-        <n-button size="small" style="padding: 4px 12px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
-        <n-input size="small" style="width: 200px" @change="handleSearch" placeholder="请输入名称"></n-input>
+        <n-button size="small" class="fixed-action-bar-button" @click="handleSave"
+          :type="iconSaved ? 'primary' : undefined" :ghost="iconSaved ? true : false">暂存
+          <img v-if="iconSaved" :src="TrueIcon" alt="已保存" />
+        </n-button>&nbsp;&nbsp;
+        <n-button size="small" class="fixed-action-bar-button" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
+        <n-input size="small" class="fixed-action-bar-search" @input="handleSearch" @keyup.esc="clearSearch" 
+          v-model:value="searchText" placeholder="请输入名称，回车搜索">
+          <template #suffix>
+            <n-button size="tiny" text @click="clearSearch" v-if="searchText">X</n-button>
+          </template>
+        </n-input>
         <n-button size="small" ghost type="primary">搜索</n-button>
       </n-input-group>
     </div>
@@ -395,24 +421,12 @@ function cancelEditing(icon: IconProps) {
       <ul class="icon-list--wrapper">
         <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
           <div class="icon--item-box" @click="handleOpenEdit(svg)">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              :viewBox="svg.viewBox"
-              style="width: 100%; height: 100%"
-              v-html="svg.svgPath"
-            ></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" :viewBox="svg.viewBox" v-html="svg.svgPath"
+              style="width: 100%; height: 100%"></svg>
           </div>
           <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
-          <n-input
-            v-else
-            v-model:value="svg.editingName"
-            size="small"
-            @blur="finishEditing(svg)"
-            @keyup.enter="finishEditing(svg)"
-            @keyup.esc="cancelEditing(svg)"
-            autofocus
-            style="width: 120px;"
-          />
+          <n-input v-else size="small" v-model:value="svg.editingName" autofocus style="width: 120px;"
+            @blur="finishEditing(svg)" @keyup.enter="finishEditing(svg)" @keyup.esc="cancelEditing(svg)" />
         </li>
       </ul>
     </div>
@@ -420,14 +434,9 @@ function cancelEditing(icon: IconProps) {
   <icon-detail ref="iconDetailRef"></icon-detail>
   
   <!-- 下载全部弹窗 -->
-  <n-modal
-    v-model:show="isDownloadModalVisible"
-    preset="card"
-    :style="{ width: '400px' }"
-    title="下载全部图标"
-    size="medium"
-    :bordered="false"
-  >
+  <n-modal v-model:show="isDownloadModalVisible"
+    preset="card" size="medium" :style="{ width: '400px' }"
+    title="下载全部图标" :bordered="false" >
     <div class="download-modal-content">
       <div style="margin-top: 20px">
         <n-space justify="center" size="large">
@@ -445,6 +454,38 @@ function cancelEditing(icon: IconProps) {
   padding: 0 10px 10px 10px;
   border-bottom: 1px solid #e2e2e2;
   box-sizing: border-box;
+
+  &-button{
+    gap: 4px;
+    padding: 4px 12px;
+    display: inline-flex; 
+    align-items: center; 
+    
+    img {
+      padding-left: 4px;
+      width: 16px; 
+      height: 16px; 
+      vertical-align: middle;
+    }
+  }
+  &-search {
+    width: 200px;
+    
+    *> .n-button {
+      padding: 1px 4px;
+      margin-left: -8px;
+      background-color: #ccc;
+      color: #333;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+    }
+  }
 }
 
 /* 图标列表容器样式 */
@@ -468,37 +509,37 @@ function cancelEditing(icon: IconProps) {
   
   /* 添加max-width限制，确保在极宽屏幕上也不会过于分散 */
   max-width: 2000px;
-}
 
-.icon--item {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 16px;
-  margin: 0; /* 移除margin，使用grid-gap控制间距 */
+  .icon--item {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 16px;
+    margin: 0; /* 移除margin，使用grid-gap控制间距 */
 
-  &-box {
-    width: 30px;
-    height: 30px;
-    margin-bottom: 16px;
-    cursor: pointer;
+    &-box {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 16px;
+      cursor: pointer;
 
-    &:hover > svg {
-      fill: orange;
+      &:hover > svg {
+        fill: orange;
+      }
     }
-  }
 
-  .icon-name {
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 2px;
-    transition: all 0.2s ease;
+    .icon-name {
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: all 0.2s ease;
 
-    &:hover {
-      background-color: #e6f7ff;
-      color: #1890ff;
+      &:hover {
+        background-color: #e6f7ff;
+        color: #1890ff;
+      }
     }
   }
 }
