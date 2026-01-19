@@ -31,11 +31,22 @@ const fileList = ref<UploadFileInfo[]>([]);
 const currentFileIndex = ref(0);
 
 function handleUploadChange(evt: any) {
-  fileList.value = evt;
-  if (evt.length > 0) {
-    const currentFile = evt[currentFileIndex.value];
+  // 过滤掉重复的文件名
+  const uniqueFiles: UploadFileInfo[] = [];
+  const existingFileNames = new Set<string>();
+  
+  for (const file of evt) {
+    if (!existingFileNames.has(file.name)) {
+      existingFileNames.add(file.name);
+      uniqueFiles.push(file);
+    }
+  }
+  
+  fileList.value = uniqueFiles;
+  if (uniqueFiles.length > 0) {
+    const currentFile = uniqueFiles[currentFileIndex.value];
     if (currentFile) {
-      currentFile.file.arrayBuffer().then(async (buffer: ArrayBuffer) => {
+      currentFile.file?.arrayBuffer().then(async (buffer: ArrayBuffer) => {
         fontContent.value = opentype.parse(await buffer);
       });
     }
@@ -138,17 +149,22 @@ function handleFileClick(index: number) {
             <template #trigger>
               <div class="custom-file-item"
                 :class="{ 'active': index === currentFileIndex }"
-                @click="handleFileClick(index)" >
+                @click="handleFileClick(index) "
+              >
                 <n-text>{{ file.name }}</n-text>
-                <n-button size="small" type="error" text 
+                <n-button size="small" text 
                   @click.stop="handleRemove(file, index) " >X</n-button>
               </div>
             </template>
             {{ file.name }}
           </n-tooltip>
         </div>
+        
+        <!-- 内容区域 -->
+        <div v-if="fileList.length > 0" class="content-area">
+          <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
+        </div>
       </div>
-      <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
     </div>
   </n-message-provider>
 </template>
@@ -211,34 +227,34 @@ function handleFileClick(index: number) {
   
   .custom-file-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    gap: 0;
     margin-top: 10px;
-    padding: 8px;
+    padding: 0;
     overflow-x: auto;
-    background-color: #fafafa;
-    border: 1px dashed #d9d9d9;
-    border-radius: 8px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #d9d9d9;
+    border-radius: 0;
     transition: all 0.3s ease;
-  }
-
-  .custom-file-list:hover {
-    background-color: #f0f0f0;
-    border-color: #1890ff;
   }
 
   .custom-file-item {
     display: inline-flex;
     align-items: center;
-    padding: 4px 8px;
+    padding: 8px 16px;
     margin: 0;
-    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
     max-width: 200px;
     background-color: #f5f5f5;
-    border: 1px solid #e0e0e0;
+    position: relative;
+    top: 1px;
+    margin-right: -1px;
   }
 
   .custom-file-item .n-text {
@@ -252,21 +268,59 @@ function handleFileClick(index: number) {
   }
 
   .custom-file-item:hover {
-    background-color: #e6f7ff73;
-    color: #1890ff;
-    border-color: #91d5ff;
-  }
-  .custom-file-item.active {
     background-color: #e6f7ff;
     color: #1890ff;
     border-color: #91d5ff;
+    z-index: 2;
+  }
+  .custom-file-item.active {
+    background-color: white;
+    color: #1890ff;
+    border-color: #d9d9d9;
+    border-bottom-color: white;
+    z-index: 3;
   }
 
   .custom-file-item .n-button { 
     margin-left: 6px;
     font-size: 12px;
+    background-color: transparent;
+    color: #999;
+    padding: 4px;
+  }
+
+  .custom-file-item .n-button:hover {
     background-color: #ff4d4f;
     color: white;
-    padding: 4px;
+  }
+
+  /* 内容区域样式 */
+  .content-area {
+    margin-top: 0;
+    padding: 20px;
+    border: 1px solid #d9d9d9;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    background-color: white;
+    flex: 1;
+    overflow: auto;
+  }
+
+  .main-content {
+    width: 80%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px 0;
+    margin: 0 auto;
+  }
+
+  .upload-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
   }
 </style>
