@@ -12,4 +12,13 @@ import { createApp } from 'vue';
 
 import App from './App.vue';
 
-createApp(App).mount('#app')
+// 全局配置
+const globalConfig = {
+  storageFontDatasKey: 'font-icons-',
+  storageFileNames: 'font-icons-saved-file-names'
+};
+
+const app = createApp(App);
+// 提供全局配置
+app.provide('globalConfig', globalConfig);
+app.mount('#app')

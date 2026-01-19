@@ -7,7 +7,7 @@
  * @FilePath: /reader-font/src/components/icon-list.vue
 -->
 <script setup lang="ts">
-import { ref, Ref, useTemplateRef, watchEffect, computed } from 'vue';
+import { ref, Ref, useTemplateRef, watchEffect, computed, inject } from 'vue';
 
 import { NButton, NInput, NInputGroup, NModal, NSpace, useMessage } from 'naive-ui';
 import type { Font, GlyphSet } from 'opentype.js';
@@ -29,8 +29,11 @@ const props = defineProps<{ font: Font; filename?: string }>();
 
 const allIconList: Ref<IconProps[]> = ref([]);
 const iconList: Ref<IconProps[]> = ref([]);
-// 存储键前缀，用于避免键名冲突
-const storageKeyPrefix: Ref<string> = ref('font-icons-');
+// 从全局配置中获取存储键前缀
+const globalConfig = inject('globalConfig', {
+  storageFontDatasKey: 'font-icons-',
+  storageFileNames: 'font-icons-saved-file-names'
+});
 // 计算属性：判断当前文件数据是否已保存到localStorage
 const isDataSaved = computed(() => {
   if (!props.filename) return false;
@@ -52,17 +55,17 @@ function getSafeStorageKey(filename: string): string {
   // 移除文件路径，只保留文件名
   const basename = filename.split('/').pop() || filename;
   // 替换特殊字符，确保键名安全
-  const safeName = basename.replace(/[^a-zA-Z0-9._-]/g, '');
+  const safeName = basename.replace(/[^a-zA-Z0-9._-]/g, '_');
   // 限制长度，防止过长
   const maxLength = 50;
   if (safeName.length <= maxLength) {
-    return `${storageKeyPrefix.value}${safeName}`;
+    return `${globalConfig.storageFontDatasKey}${safeName}`;
   }
   // 如果过长，从后往前截取，保留文件后缀和有辨识度的部分
   const hash = btoa(safeName).substring(0, 8);
   // 从后往前截取，保留文件名的后半部分
   const truncatedName = safeName.slice(-(maxLength - 10));
-  return `${storageKeyPrefix.value}${truncatedName}-${hash}`;
+  return `${globalConfig.storageFontDatasKey}${truncatedName}-${hash}`;
 }
 
 /**
@@ -175,11 +178,11 @@ function openDownloadModal() {
 function handleSaveFileName(filename: string){
   try {
     // 从缓存读取文件名集合
-    const savedNamesKey = `${storageKeyPrefix.value}saved-file-names`;
+    const storageFileNamesKey = globalConfig.storageFileNames;
     let savedFileNames: string[] = [];
     
     // 尝试从localStorage获取已保存的文件名集合
-    const existingData = localStorage.getItem(savedNamesKey);
+    const existingData = localStorage.getItem(storageFileNamesKey);
     if (existingData) {
       savedFileNames = JSON.parse(existingData);
       console.log(`Loaded saved file names: ${savedFileNames}`);
@@ -195,7 +198,7 @@ function handleSaveFileName(filename: string){
     }
     
     // 保存更新后的文件名集合
-    localStorage.setItem(savedNamesKey, JSON.stringify(savedFileNames));
+    localStorage.setItem(storageFileNamesKey, JSON.stringify(savedFileNames));
     console.log(`Saved updated file names: ${savedFileNames}`);
   } catch (error) {
     console.error('Failed to handle save file name:', error);
@@ -255,7 +258,7 @@ ${icon.svgPath}
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       // 使用当前解析的ttf文件名称作为zip文件名
-      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
+      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons-svg';
       link.download = `${baseFilename}-svg.zip`;
       document.body.appendChild(link);
       link.click();
@@ -389,7 +392,7 @@ async function downloadAllPng() {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       // 使用当前解析的ttf文件名称作为zip文件名
-      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons';
+      const baseFilename = props.filename ? props.filename.replace(/\.[^/.]+$/, '') : 'icons-png';
       link.download = `${baseFilename}-png.zip`;
       document.body.appendChild(link);
       link.click();
