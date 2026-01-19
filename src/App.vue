@@ -309,7 +309,7 @@ function handleFileClick(index: number) {
   /* 内容区域样式 */
   .content-area {
     margin-top: -1px;
-    padding: 20px;
+    padding: 10px;
     border: 1px solid #d9d9d9;
     border-radius: 0 0 8px 8px;
     background-color: white;

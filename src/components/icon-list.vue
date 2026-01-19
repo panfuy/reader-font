@@ -457,46 +457,44 @@ function cancelEditing(icon: IconProps) {
 </script>
 
 <template>
-  <div style="width: 100%; margin: 20px auto;">
-    <n-input-group style="justify-content: left">
-      <n-button 
-        size="large" 
-        style="padding: 8px 16px;" 
-        @click="handleSave"
-        :type="isDataSaved ? 'primary' : undefined"
-        :ghost="isDataSaved ? true : false"
-      >暂存</n-button>
-      &nbsp;&nbsp;
-      <n-button size="large" style="padding: 8px 16px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
-      <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
-      <n-button type="primary" ghost size="large">搜索</n-button>
-    </n-input-group>
-  </div>
+  <div style="display: flex; flex-direction: column; height: 100%;">
+    <!-- 固定操作栏 -->
+    <div class="fixed-action-bar">
+      <n-input-group style="justify-content: left">
+        <n-button size="small" style="padding: 4px 12px;" @click="handleSave"
+          :type="isDataSaved ? 'primary' : undefined" :ghost="isDataSaved ? true : false">暂存</n-button>&nbsp;&nbsp;
+        <n-button size="small" style="padding: 4px 12px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
+        <n-input size="small" style="width: 200px" @change="handleSearch" placeholder="请输入名称"></n-input>
+        <n-button size="small" ghost type="primary">搜索</n-button>
+      </n-input-group>
+    </div>
 
-  <div style="width: 100%; flex: 1; overflow-y: auto; padding-bottom: 20px;">
-    <ul class="icon-list--wrapper">
-      <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
-        <div class="icon--item-box" @click="handleOpenEdit(svg)">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            :viewBox="svg.viewBox"
-            style="width: 100%; height: 100%"
-            v-html="svg.svgPath"
-          ></svg>
-        </div>
-        <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
-        <n-input
-          v-else
-          v-model:value="svg.editingName"
-          size="small"
-          @blur="finishEditing(svg)"
-          @keyup.enter="finishEditing(svg)"
-          @keyup.esc="cancelEditing(svg)"
-          autofocus
-          style="width: 120px;"
-        />
-      </li>
-    </ul>
+    <!-- 图标列表区域 -->
+    <div class="icon-list-container">
+      <ul class="icon-list--wrapper">
+        <li v-for="svg of iconList" :key="svg.unicode" class="icon--item">
+          <div class="icon--item-box" @click="handleOpenEdit(svg)">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              :viewBox="svg.viewBox"
+              style="width: 100%; height: 100%"
+              v-html="svg.svgPath"
+            ></svg>
+          </div>
+          <div v-if="!svg.isEditing" @click="startEditing(svg)" class="icon-name">{{ svg.iconName }}</div>
+          <n-input
+            v-else
+            v-model:value="svg.editingName"
+            size="small"
+            @blur="finishEditing(svg)"
+            @keyup.enter="finishEditing(svg)"
+            @keyup.esc="cancelEditing(svg)"
+            autofocus
+            style="width: 120px;"
+          />
+        </li>
+      </ul>
+    </div>
   </div>
   <icon-detail ref="iconDetailRef"></icon-detail>
   
@@ -521,6 +519,20 @@ function cancelEditing(icon: IconProps) {
 </template>
 
 <style lang="scss" scoped>
+/* 固定操作栏样式 */
+.fixed-action-bar {
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px solid #e2e2e2;
+  box-sizing: border-box;
+}
+
+/* 图标列表容器样式 */
+.icon-list-container {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+}
+
 .icon-list--wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* 自动填充列，每列最小120px */
