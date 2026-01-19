@@ -223,6 +223,10 @@ function handleFileClick(index: number) {
   
   .upload-section {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
   }
   
   .custom-file-list {
@@ -232,11 +236,16 @@ function handleFileClick(index: number) {
     margin-top: 10px;
     padding: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     background-color: transparent;
     border: none;
-    border-bottom: 1px solid #d9d9d9;
     border-radius: 0;
     transition: all 0.3s ease;
+    transform: rotateX(180deg);
+  }
+  
+  .custom-file-list > * {
+    transform: rotateX(180deg);
   }
 
   .custom-file-item {
@@ -245,7 +254,6 @@ function handleFileClick(index: number) {
     padding: 8px 16px;
     margin: 0;
     border: 1px solid #d9d9d9;
-    border-bottom: none;
     border-radius: 8px 8px 0 0;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -253,7 +261,7 @@ function handleFileClick(index: number) {
     max-width: 200px;
     background-color: #f5f5f5;
     position: relative;
-    top: 1px;
+    top: -1px;
     margin-right: -1px;
   }
 
@@ -269,16 +277,20 @@ function handleFileClick(index: number) {
 
   .custom-file-item:hover {
     background-color: #e6f7ff;
-    color: #1890ff;
-    border-color: #91d5ff;
     z-index: 2;
   }
-  .custom-file-item.active {
-    background-color: white;
+  
+  .custom-file-item:hover .n-text {
     color: #1890ff;
-    border-color: #d9d9d9;
-    border-bottom-color: white;
+  }
+  
+  .custom-file-item.active {
+    background-color: #e6f7ff; 
     z-index: 3;
+  }
+  
+  .custom-file-item.active .n-text {
+    color: #1890ff;
   }
 
   .custom-file-item .n-button { 
@@ -296,31 +308,12 @@ function handleFileClick(index: number) {
 
   /* 内容区域样式 */
   .content-area {
-    margin-top: 0;
+    margin-top: -1px;
     padding: 20px;
     border: 1px solid #d9d9d9;
-    border-top: none;
     border-radius: 0 0 8px 8px;
     background-color: white;
     flex: 1;
     overflow: auto;
-  }
-
-  .main-content {
-    width: 80%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: 20px 0;
-    margin: 0 auto;
-  }
-
-  .upload-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
   }
 </style>
