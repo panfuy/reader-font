@@ -26,6 +26,60 @@ type IconProps = {
 
 const props = defineProps<{ font: Font; filename?: string }>();
 
+
+const allIconList: Ref<IconProps[]> = ref([]);
+const iconList: Ref<IconProps[]> = ref([]);
+// 存储键前缀，用于避免键名冲突
+const storageKeyPrefix: Ref<string> = ref('font-icons-');
+
+/**
+ * 获取安全的localStorage键名
+ * @param filename 文件名
+ * @returns 处理后的安全键名
+ */
+function getSafeStorageKey(filename: string): string {
+  // 移除文件路径，只保留文件名
+  const basename = filename.split('/').pop() || filename;
+  // 替换特殊字符，确保键名安全
+  const safeName = basename.replace(/[^a-zA-Z0-9._-]/g, '');
+  // 限制长度，防止过长
+  const maxLength = 50;
+  if (safeName.length <= maxLength) {
+    return `${storageKeyPrefix.value}${safeName}`;
+  }
+  // 如果过长，从后往前截取，保留文件后缀和有辨识度的部分
+  const hash = btoa(safeName).substring(0, 8);
+  // 从后往前截取，保留文件名的后半部分
+  const truncatedName = safeName.slice(-(maxLength - 10));
+  return `${storageKeyPrefix.value}${truncatedName}-${hash}`;
+}
+
+/**
+ * 从localStorage加载保存的图标数据
+ * @returns 是否成功加载了缓存数据
+ */
+function loadSavedIconData(): boolean {
+  if (!props.filename) return false;
+  
+  try {
+    // 获取安全的存储键名
+    const storageKey = getSafeStorageKey(props.filename);
+    // 从localStorage加载数据
+    const storedData = localStorage.getItem(storageKey);
+    if (storedData) {
+      const savedIcons = JSON.parse(storedData);
+      console.log(`Loaded saved icon data for ${props.filename} using key: ${storageKey}`);
+      allIconList.value = savedIcons;
+      iconList.value = savedIcons;
+      return true; // 成功加载
+    }
+  } catch (error) {
+    console.error('Failed to load saved icon data:', error);
+    message.error('加载保存的图标数据失败：' + (error instanceof Error ? error.message : '未知错误'));
+  }
+  return false; // 加载失败
+}
+
 /**
  * 从给定的字体生成图标列表。
  *
@@ -52,16 +106,32 @@ function generatorIconList(font: Font) {
   }
   return genIconList;
 }
-
-const allIconList: Ref<IconProps[]> = ref([]);
-const iconList: Ref<IconProps[]> = ref([]);
-
 /**
  * 观察字体的变化并更新图标列表。
  */
 watchEffect(() => {
-  allIconList.value = generatorIconList(props.font);
-  iconList.value = allIconList.value;
+  
+  // 优先尝试从缓存加载数据
+  const hasLoadedFromCache = loadSavedIconData();
+  
+  // 如果成功加载了缓存数据，就不再从props生成
+  if (hasLoadedFromCache) {
+    console.log(`Successfully loaded icon data from cache for ${props.filename}`);
+    return;
+  }
+  // 确保字体对象存在
+  if (!props.font) {
+    console.log('No font provided, clearing icon list');
+    allIconList.value = [];
+    iconList.value = [];
+    return;
+  }
+  
+  // 如果没有缓存数据，从props生成图标列表
+  console.log(`Generating new icon list for ${props.filename} from props`);
+  const newIcons = generatorIconList(props.font);
+  allIconList.value = newIcons;
+  iconList.value = newIcons;
 });
 
 const iconDetailRef = useTemplateRef('iconDetailRef');
@@ -85,6 +155,66 @@ const isDownloading = ref(false); // 防止重复点击的状态
  */
 function openDownloadModal() {
   isDownloadModalVisible.value = true;
+}
+
+/**
+ * 处理保存文件名
+ * @param filename 文件名
+ */
+function handleSaveFileName(filename: string){
+  try {
+    // 从缓存读取文件名集合
+    const savedNamesKey = `${storageKeyPrefix.value}saved-file-names`;
+    let savedFileNames: string[] = [];
+    
+    // 尝试从localStorage获取已保存的文件名集合
+    const existingData = localStorage.getItem(savedNamesKey);
+    if (existingData) {
+      savedFileNames = JSON.parse(existingData);
+      console.log(`Loaded saved file names: ${savedFileNames}`);
+    }
+    
+    // 如果文件名不在集合中，则添加
+    if (!savedFileNames.includes(filename)) {
+      savedFileNames.push(filename);
+      console.log(`Added new file name: ${filename}`);
+    } else {
+      // 已存在时跳过
+      return;
+    }
+    
+    // 保存更新后的文件名集合
+    localStorage.setItem(savedNamesKey, JSON.stringify(savedFileNames));
+    console.log(`Saved updated file names: ${savedFileNames}`);
+  } catch (error) {
+    console.error('Failed to handle save file name:', error);
+    message.error('保存文件名失败：' + (error instanceof Error ? error.message : '未知错误'));
+  }
+}
+
+/**
+ * 保存图标数据到localStorage
+ */
+function handleSave() {
+  if (!props.filename) {
+    message.error('无法保存：缺少文件名');
+    return;
+  }
+  
+  try {
+    // 获取安全的存储键名
+    const storageKey = getSafeStorageKey(props.filename);
+    // 直接保存当前文件的图标数据，每个文件对应一个独立的localStorage项
+    localStorage.setItem(storageKey, JSON.stringify(allIconList.value));
+    // 将暂存的文件名存起来
+    handleSaveFileName(props.filename);
+    
+    message.success(`成功保存 ${props.filename} 的图标数据。localStorage名称：${storageKey}`);
+    console.log(`Saved icon data for ${props.filename} using key: ${storageKey}`);
+  } catch (error) {
+    console.error('Failed to save icon data:', error);
+    message.error('保存失败：' + (error instanceof Error ? error.message : '未知错误'));
+  }
 }
 
 /**
@@ -318,7 +448,7 @@ function cancelEditing(icon: IconProps) {
 <template>
   <div style="width: 80%; margin: 30px auto">
     <n-input-group style="justify-content: left">
-      <n-button size="large" style="padding: 8px 16px;">暂存</n-button>&nbsp;&nbsp;
+      <n-button size="large" style="padding: 8px 16px;" @click="handleSave">暂存</n-button>&nbsp;&nbsp;
       <n-button size="large" style="padding: 8px 16px;" @click="openDownloadModal">下载全部</n-button>&nbsp;&nbsp;
       <n-input @change="handleSearch" style="width: 300px" size="large" placeholder="请输入名称"></n-input>
       <n-button type="primary" ghost size="large">搜索</n-button>
