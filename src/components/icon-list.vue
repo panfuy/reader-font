@@ -522,50 +522,29 @@ function cancelEditing(icon: IconProps) {
 
 <style lang="scss" scoped>
 .icon-list--wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* 自动填充列，每列最小120px */
+  grid-gap: 16px; /* 网格间距 */
   margin: 0 auto;
-  padding: 0;
+  padding: 16px;
   width: 100%;
-  max-width: 1800px; /* 增加最大宽度，适应宽屏幕 */
+  max-width: 100%; /* 取消最大宽度限制，充分利用屏幕空间 */
+  justify-content: center;
+  box-sizing: border-box; /* 确保padding不会增加总宽度 */
+  overflow-x: hidden; /* 防止水平滚动 */
+  
+  /* 添加max-width限制，确保在极宽屏幕上也不会过于分散 */
+  max-width: 2000px;
 }
 
 .icon--item {
   list-style: none;
-  margin: 16px;
-  width: calc(14.28% - 32px); /* 每行7个图标，减去左右margin */
-  min-width: 120px; /* 进一步减小最小宽度，适应更多图标 */
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  
-  @media (min-width: 1920px) {
-    width: calc(11.11% - 32px); /* 每行9个图标 */
-  }
-
-  /* 媒体查询：在超宽屏幕上显示更多图标 */
-  @media (min-width: 1600px) {
-    width: calc(12.5% - 32px); /* 每行8个图标 */
-  }
-  
-  /* 在小屏幕上减少图标数量，保持良好显示 */
-  @media (max-width: 1200px) {
-    width: calc(16.66% - 32px); /* 每行6个图标 */
-  }
-  
-  @media (max-width: 992px) {
-    width: calc(20% - 32px); /* 每行5个图标 */
-  }
-  
-  @media (max-width: 768px) {
-    width: calc(25% - 32px); /* 每行4个图标 */
-  }
-  
-  @media (max-width: 576px) {
-    width: calc(33.33% - 32px); /* 每行3个图标 */
-  }
+  padding: 16px;
+  margin: 0; /* 移除margin，使用grid-gap控制间距 */
 
   &-box {
     width: 30px;
