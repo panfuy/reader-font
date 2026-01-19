@@ -7,7 +7,7 @@
  * @FilePath: /reader-font/src/App.vue
 -->
 <script setup lang="ts">
-import { ref, Ref } from 'vue';
+import { ref, Ref, onMounted, inject } from 'vue';
 
 import {
   NButton,
@@ -21,14 +21,41 @@ import {
   UploadFileInfo,
 } from 'naive-ui';
 import opentype, { Font } from 'opentype.js';
-
 import { ArchiveOutline as ArchiveIcon, LogoGithub } from '@vicons/ionicons5';
-
 import iconList from './components/icon-list.vue';
+import { deleteStorageData, getSavedFileNameData } from './utils/storageUtil';
 
 const fontContent: Ref<Font | null> = ref(null);
 const fileList = ref<UploadFileInfo[]>([]);
 const currentFileIndex = ref(0);
+
+// 从localStorage加载保存的文件名和字体数据
+onMounted(() => {
+  try {
+    // 1. 从storageFileNames获取保存的文件名数组
+    const savedFileNames: string[] = getSavedFileNameData();
+    console.log(`Loaded saved file names:`, savedFileNames);
+    
+    // 2. 将文件名数组转换为UploadFileInfo格式，添加到fileList
+    const savedFiles: UploadFileInfo[] = savedFileNames.map((name: string) => {
+      // 创建符合UploadFileInfo类型的对象
+      const uploadFileInfo: UploadFileInfo = {
+        id: `saved-${name}`,
+        name,
+        status: 'finished',
+        type: 'font',
+        url: null,
+        percentage: 100,
+        file: null
+      };
+      return uploadFileInfo;
+    });
+    
+    fileList.value = savedFiles;
+  } catch (error) {
+    console.error('Failed to load saved files from localStorage:', error);
+  }
+});
 
 function handleUploadChange(evt: any) {
   // 过滤掉重复的文件名
@@ -60,7 +87,10 @@ function handleRemove(_file: any, index: number) {
   
   // 手动从fileList中移除指定索引的文件
   fileList.value.splice(index, 1);
-  console.log('After splice, fileList length:', fileList.value.length);
+  console.log('After splice, fileList length:',_file.name, fileList.value.length);
+
+  // 删除缓存的数据
+  deleteStorageData(_file.name);
   
   // 计算新的currentFileIndex
   let newIndex = currentFileIndex.value;
@@ -102,9 +132,19 @@ function handleFileClick(index: number) {
   currentFileIndex.value = index;
   const currentFile = fileList.value[index];
   if (currentFile) {
-    currentFile.file?.arrayBuffer().then(async (buffer: ArrayBuffer) => {
-      fontContent.value = opentype.parse(await buffer);
-    });
+    console.log('handleFileClick called, index:', index, 'currentFile:', currentFile);
+    // 1. 首先尝试从file对象加载字体数据（新上传的文件）
+    if (currentFile.file) {
+      currentFile.file?.arrayBuffer().then(async (buffer: ArrayBuffer) => {
+        fontContent.value = opentype.parse(await buffer);
+      });
+    } else {
+      // 2. 如果没有file对象，说明是从localStorage加载的文件名
+      // 这种情况下，我们需要提示用户重新上传该文件，因为我们之前只保存了图标数据
+      console.log(`Please re-upload the file "${currentFile.name}" to view its content.`);
+      // 可以在这里添加一个消息提示，告知用户需要重新上传文件
+      fontContent.value = null;
+    }
   }
 }
 
@@ -162,7 +202,7 @@ function handleFileClick(index: number) {
         
         <!-- 内容区域 -->
         <div v-if="fileList.length > 0" class="content-area">
-          <icon-list v-if="fontContent" :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
+          <icon-list :font="fontContent" :filename="fileList[currentFileIndex]?.name" />
         </div>
       </div>
     </div>
